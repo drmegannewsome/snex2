@@ -121,7 +121,7 @@ function submitObs() {
   }
   $.ajax({
     url: '{% url "submit-gw-obs" %}',
-    data: $('#obs-parameters-form').serialize() + "&galaxy_ids=" + JSON.stringify({'galaxy_ids': checkboxesChecked}),
+    data: $('#obs-parameters-form').serialize() + "&galaxy_ids=" + JSON.stringify({'galaxy_ids': checkboxesChecked}) + "&superevent_id=" + JSON.stringify({superevent_id}),
     dataType: 'json',
     success: function(response) {
       if (response.hasOwnProperty('failure')) {
