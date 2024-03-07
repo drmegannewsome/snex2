@@ -23,6 +23,7 @@ from tom_observations.facility import get_service_class
 from tom_observations.models import ObservationRecord, ObservationGroup, DynamicCadence
 from custom_code.hooks import _return_session
 from custom_code.views import Snex1ConnectionError
+from custom_code.models import ScienceTags, TargetTags
 import logging
 
 logger = logging.getLogger(__name__)
@@ -151,6 +152,7 @@ def submit_galaxy_observations_view(request):
 
     ### Get list of GWFollowupGalaxy ids from the request and create Targets
     galaxy_ids = json.loads(request.GET['galaxy_ids'])['galaxy_ids']
+    superevent_id = json.loands(request.GET['superevent_id'])
     galaxies = GWFollowupGalaxy.objects.filter(id__in=galaxy_ids)
 
     try:
@@ -173,12 +175,15 @@ def submit_galaxy_observations_view(request):
                     assign_perm('tom_targets.delete_target', gw, newtarget)
 
                 run_hook('target_post_save', target=newtarget, created=created, group_names=['GWO4'], wrapped_session=db_session)
-
+                
+                #snex2_tag, _ = ScienceTags.objects.get_or_create(tag=)
+                #newtag, created = TargetTags.objects.get_or_create(target_id=newtarget.id, tag_id=int(snex2_tag.id))
+                
                 ### Create TargetExtra linking the Target with the GWFollowupGalaxy
                 if created:
                     targetextralink = TargetExtra(target=newtarget, key='gwfollowupgalaxy_id', value=galaxy.id)
                     targetextralink.save()
-
+                
                 ### Create and submit the observation requests
                 form_data = {'name': newtarget.name,
                              'target_id': newtarget.id,
