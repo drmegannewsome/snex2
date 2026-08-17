@@ -54,14 +54,16 @@ class SNExTarget(BaseTarget):
             if nearby.exists():
                 raise ValidationError('Target exists near these coordinates.')
 
+            
     def save(self, *args, **kwargs):
         created = self.pk is None
         if created and self.pipeline_id is None:
-            db_session = _return_session(settings.SNEX1_DB_URL)
-            Targets = _load_table('targets', db_address=settings.SNEX1_DB_URL)
-            Targetnames = _load_table('targetnames', db_address=settings.SNEX1_DB_URL)
-            
+            db_session = None
             try:
+                db_session = _return_session(settings.SNEX1_DB_URL)
+                Targets = _load_table('targets', db_address=settings.SNEX1_DB_URL)
+                Targetnames = _load_table('targetnames', db_address=settings.SNEX1_DB_URL)
+
                 # Check if target already exists in pipeline db by coordinates
                 existing = db_session.query(Targets).filter(
                     Targets.ra0 >= self.ra - 4/3600,
@@ -87,8 +89,10 @@ class SNExTarget(BaseTarget):
                     db_session.add(Targetnames(targetid=pipeline_target.id, groupidcode=groupidcode, name=self.name, datecreated=now, lastmodified=now))
                     db_session.commit()
             except Exception as e:
-                logger.error(f'Failed to create target in the pipeline database for {self.name}: {e}')
-                db_session.rollback()
+                logger.warning(f'Skipping SNEx1 pipeline sync for {self.name} (not reachable locally): {e}')
+                if db_session is not None:
+                    db_session.rollback()
             finally:
-                db_session.close()
+                if db_session is not None:
+                    db_session.close()
         super().save(*args, **kwargs)
